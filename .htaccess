@@ -1,0 +1,4 @@
+# Block direct HTTP access to common.php
+<Files "common.php">
+    Require all denied
+</Files>

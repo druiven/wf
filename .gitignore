@@ -1,0 +1,18 @@
+# Database credentials (kept outside web root, never commit)
+../wf-config.php
+
+# FPDF library (download separately from fpdf.org)
+fpdf/
+fpdf*.zip
+
+# One-time import scripts and raw player data
+database/
+
+# Backups and copies
+backup/
+teams-copy.php
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
