@@ -50,4 +50,4 @@ define('DB_CHARSET', 'utf8mb4');
 
 ---
 
-*Built with [GitHub Copilot](https://github.com/features/copilot) (Claude Sonnet 4.6).*
+*Built together with [GitHub Copilot](https://github.com/features/copilot) (Claude Sonnet 4.6).*
