@@ -39,6 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $opgeslagen = true;
+
+    // Re-fetch so the form reflects the just-saved data
+    $spelers = $pdo->query("
+        SELECT id, speler_nr, voornaam, achternaam, team_groep, positie, handig, fit, niet_samen
+        FROM voetballers
+        WHERE team_groep IN ('A','B','C','D')
+        ORDER BY team_groep, voornaam
+    ")->fetchAll();
 }
 ?>
 <!DOCTYPE html>
