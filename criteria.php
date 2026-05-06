@@ -30,17 +30,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $positie    = $data['positie']    !== '' ? ($positieLabels[$data['positie']] ?? $data['positie']) : '–';
         $handig     = $data['handig']     !== '' ? $data['handig']     : '–';
         $fit        = $data['fit']        !== '' ? $data['fit']        : '–';
-        $nietsamen  = $data['niet_samen'] !== '' ? (int)$data['niet_samen'] : '–';
-
-        // Resolve speler_nr to a name for readability in the email
-        if (is_int($nietsamen)) {
+        $nsNrs     = !empty($data['niet_samen']) ? array_map('intval', (array)$data['niet_samen']) : [];
+        $nsNamen   = [];
+        foreach ($nsNrs as $nsNr) {
             foreach ($spelers as $opt) {
-                if ((int)$opt['speler_nr'] === $nietsamen) {
-                    $nietsamen = trim($opt['voornaam'] . ' ' . $opt['achternaam']);
+                if ((int)$opt['speler_nr'] === $nsNr) {
+                    $nsNamen[] = trim($opt['voornaam'] . ' ' . $opt['achternaam']);
                     break;
                 }
             }
         }
+        $nietsamen = $nsNamen ? implode(', ', $nsNamen) : '–';
 
         $body .= sprintf("%-25s [%s]  positie: %-6s  handig: %-4s  fit: %-4s  niet samen: %s\n",
             $naam, $s['team_groep'], $positie, $handig, $fit, $nietsamen);
@@ -80,16 +80,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $positie   = $data['positie']    !== '' ? ($positieLabels[$data['positie']] ?? $data['positie']) : '-';
         $handig    = $data['handig']     !== '' ? $data['handig']    : '-';
         $fit       = $data['fit']        !== '' ? $data['fit']       : '-';
-        $nsNr      = $data['niet_samen'] !== '' ? (int)$data['niet_samen'] : null;
-        $nsNaam    = '-';
-        if ($nsNr !== null) {
+        $nsNrs   = !empty($data['niet_samen']) ? array_map('intval', (array)$data['niet_samen']) : [];
+        $pdNamen = [];
+        foreach ($nsNrs as $nsNr) {
             foreach ($spelers as $opt) {
                 if ((int)$opt['speler_nr'] === $nsNr) {
-                    $nsNaam = trim($opt['voornaam'] . ' ' . $opt['achternaam']);
+                    $pdNamen[] = trim($opt['voornaam'] . ' ' . $opt['achternaam']);
                     break;
                 }
             }
         }
+        $nsNaam = $pdNamen ? implode(', ', $pdNamen) : '-';
 
         $pdf->Cell(50, 6, $naam,              1, 0, 'L');
         $pdf->Cell(12, 6, $s['team_groep'],   1, 0, 'C');
@@ -197,12 +198,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                value="<?= htmlspecialchars((string)($s['fit'] ?? '')) ?>">
                     </td>
                     <td>
-                        <select name="speler[<?= $s['id'] ?>][niet_samen]">
-                            <option value="">–</option>
+                        <?php $nsSelected = array_map('intval', array_filter(explode(',', (string)$s['niet_samen']))); ?>
+                        <select name="speler[<?= $s['id'] ?>][niet_samen][]" multiple size="3">
                             <?php foreach ($spelers as $opt): ?>
                                 <?php if ($opt['id'] === $s['id']) continue; ?>
                                 <option value="<?= $opt['speler_nr'] ?>"
-                                    <?= (string)$s['niet_samen'] === (string)$opt['speler_nr'] ? 'selected' : '' ?>>
+                                    <?= in_array((int)$opt['speler_nr'], $nsSelected) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars(trim($opt['voornaam'] . ' ' . $opt['achternaam'])) ?>
                                 </option>
                             <?php endforeach; ?>

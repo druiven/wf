@@ -32,7 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':positie'    => isset($data['positie'])    && $data['positie']    !== '' ? (int)$data['positie']    : null,
             ':handig'     => isset($data['handig'])     && $data['handig']     !== '' ? (int)$data['handig']     : null,
             ':fit'        => isset($data['fit'])        && $data['fit']        !== '' ? (int)$data['fit']        : null,
-            ':niet_samen' => isset($data['niet_samen']) && $data['niet_samen'] !== '' ? (int)$data['niet_samen'] : null,
+            ':niet_samen' => !empty($data['niet_samen'])
+                ? implode(',', array_map('intval', (array)$data['niet_samen']))
+                : null,
         ]);
     }
 
@@ -103,12 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                value="<?= htmlspecialchars((string)($s['fit'] ?? '')) ?>">
                     </td>
                     <td>
-                        <select name="speler[<?= $s['id'] ?>][niet_samen]">
-                            <option value="">–</option>
+                        <?php $nsSelected = array_map('intval', array_filter(explode(',', (string)$s['niet_samen']))); ?>
+                        <select name="speler[<?= $s['id'] ?>][niet_samen][]" multiple size="3">
                             <?php foreach ($spelers as $opt): ?>
                                 <?php if ($opt['id'] === $s['id']) continue; ?>
                                 <option value="<?= $opt['speler_nr'] ?>"
-                                    <?= (string)$s['niet_samen'] === (string)$opt['speler_nr'] ? 'selected' : '' ?>>
+                                    <?= in_array((int)$opt['speler_nr'], $nsSelected) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars(trim($opt['voornaam'] . ' ' . $opt['achternaam'])) ?>
                                 </option>
                             <?php endforeach; ?>
