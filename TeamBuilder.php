@@ -7,12 +7,14 @@ class TeamBuilder
     private array $ids;
     private int   $aantalTeams;
     private array $conflictMap = [];
+    private bool  $useGroepen;
 
-    public function __construct(PDO $pdo, array $ids)
+    public function __construct(PDO $pdo, array $ids, bool $useGroepen = true)
     {
         $this->pdo         = $pdo;
         $this->ids         = array_values(array_filter(array_map('intval', $ids)));
         $this->aantalTeams = count($this->ids) >= 15 ? 4 : 2;
+        $this->useGroepen  = $useGroepen;
     }
 
     public function getAantalTeams(): int
@@ -63,6 +65,13 @@ class TeamBuilder
 
     private function buildQueue(array $players): array
     {
+        if (!$this->useGroepen) {
+            // Ignore A/B/C/D groups — just shuffle all players randomly
+            $queue = $players;
+            shuffle($queue);
+            return $queue;
+        }
+
         // Group by team_groep and shuffle within each group
         $byGroup = [];
         foreach ($players as $p) {
@@ -137,21 +146,33 @@ class TeamBuilder
             $score += 10000;
         }
 
-        // 2. team_groep duplicate
-        foreach ($leden as $lid) {
-            if ($lid['team_groep'] === $player['team_groep']) {
-                $score += 1000;
+        // 2. team_groep duplicate (only when groepen are in use)
+        if ($this->useGroepen) {
+            foreach ($leden as $lid) {
+                if ($lid['team_groep'] === $player['team_groep']) {
+                    $score += 1000;
+                }
             }
         }
 
-        // 3. fit balance (0–10 scale)
+        // 3. groep-strength balance: A=4, B=3, C=2, D=1
+        //    Balance the total tier-strength across teams, just like fit/handig.
+        $groepWaarde = ['A' => 4, 'B' => 3, 'C' => 2, 'D' => 1];
+        $playerGroepKracht = $groepWaarde[$player['team_groep']] ?? 0;
+        $teamGroepKracht   = array_sum(array_map(
+            fn($lid) => $groepWaarde[$lid['team_groep']] ?? 0,
+            $leden
+        ));
+        $score += ($teamGroepKracht + $playerGroepKracht) * 49;//was 25
+
+        // 4. fit balance (0–10 scale)
         if ($player['fit'] !== null) {
-            $score += array_sum(array_column($leden, 'fit')) * 20;
+            $score += array_sum(array_column($leden, 'fit')) * 30;//was 20
         }
 
-        // 4. handig balance (0–10 ball skill scale)
+        // 5. handig balance (0–10 ball skill scale)
         if ($player['handig'] !== null) {
-            $score += array_sum(array_column($leden, 'handig')) * 20;
+            $score += array_sum(array_column($leden, 'handig')) * 20;//was 20
         }
 
         // 5. positie duplicates (soft)
@@ -173,7 +194,7 @@ class TeamBuilder
         $sizes   = array_map('count', $teams);
         $maxSize = max($sizes);
         if (count($leden) < $maxSize) {
-            $playerStrength = ($player['fit'] ?? 0) + ($player['handig'] ?? 0);
+            $playerStrength = ($player['fit'] ?? 0) + ($player['handig'] ?? 0) + $playerGroepKracht;
             $score -= $playerStrength * 15;
         }
 
